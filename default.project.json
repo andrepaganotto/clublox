@@ -1,23 +1,24 @@
 {
-  "name": "clublox",
-  "tree": {
-    "$className": "DataModel",
-    "ReplicatedStorage": {
-      "Shared": {
-        "$path": "src/shared"
-      }
-    },
-    "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      }
-    },
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
-        }
-      }
-    }
-  }
+	"name": "clublox",
+	"tree": {
+		"$className": "DataModel",
+
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"$path": "src/ReplicatedStorage"
+		},
+
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"$path": "src/ServerScriptService"
+		},
+
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"$path": "src/StarterPlayerScripts"
+			}
+		}
+	}
 }
