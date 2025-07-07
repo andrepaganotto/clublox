@@ -3,15 +3,18 @@ local ProfileStore = require(ServerScriptService.lib.ProfileStore)
 
 local DataService = require(ServerScriptService.services.DataService)
 local CashService = require(ServerScriptService.services.CashService)
+local ResourceService = require(ServerScriptService.services.ResourceServices)
+local PlotService = require(ServerScriptService.services.PlotService)
 
 local Players = game:GetService("Players")
 
-local playerSchema = require(ServerScriptService.schemas.playerSchema)
-local PlayerStore = ProfileStore.New("PlayerStore", playerSchema)
+local PlayerProfileData = require(ServerScriptService.constants.PlayerProfileData)
+local PlayerStore = ProfileStore.New("PlayerStore", PlayerProfileData)
 
 local function init(player: Player, profile: typeof(PlayerStore:StartSessionAsync()))
-	CashService.syncCashValue(player, profile.Data.Cash)
-	-- init and sync other things
+	-- DataService.resetProfile(profile)
+	PlotService.start(player, profile)
+	CashService.clientSync(player, profile.Data.cash)
 end
 
 local function playerAdded(player: Player)
@@ -47,6 +50,7 @@ end
 local function playerRemoving(player: Player)
 	local profile = DataService.Profiles[player]
 	if profile then
+		PlotService.stop(profile)
 		profile:EndSession()
 		DataService.Profiles[player] = nil
 	end

@@ -7,43 +7,43 @@ local Events = ReplicatedStorage.Remotes.Events
 
 local CashService = {}
 
-function CashService.syncCashValue(player: Player, value: number)
+function CashService.clientSync(player: Player, value: number)
 	local leaderstats = player:FindFirstChild("leaderstats")
-	local Cash = leaderstats and leaderstats.Cash
+	local cash = leaderstats and leaderstats.Cash
 
 	if not leaderstats then
 		leaderstats = Instance.new("Folder", player)
 		leaderstats.Name = "leaderstats"
 
-		Cash = Instance.new("IntValue", leaderstats)
-		Cash.Name = "Cash"
+		cash = Instance.new("IntValue", leaderstats)
+		cash.Name = "Cash"
 	end
 
-	Cash.Value = value
+	cash.Value = value
 
 	Events.UpdateCash:FireClient(player, value)
 end
 
 function CashService.giveCash(player: Player, amount: number)
 	local profile = DataService.getProfile(player)
-	if not profile then
-		return
+	if not profile or (profile and not profile:IsActive()) then
+		return warn("[takeCash]: No profile found for", player)
 	end
 
-	profile.Data.Cash += amount
+	profile.Data.cash += amount
 
-	CashService.syncCashValue(player, profile.Data.Cash)
+	CashService.clientSync(player, profile.Data.cash)
 end
 
 function CashService.takeCash(player: Player, amount: number)
 	local profile = DataService.getProfile(player)
-	if not profile then
-		return
+	if not profile or (profile and not profile:IsActive()) then
+		return warn("[takeCash]: No profile found for", player)
 	end
 
-	profile.Data.Cash -= amount
+	profile.Data.cash -= amount
 
-	CashService.syncCashValue(player, profile.Data.Cash)
+	CashService.clientSync(player, profile.Data.cash)
 end
 
 return CashService
