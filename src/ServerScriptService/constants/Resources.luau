@@ -1,32 +1,34 @@
-export type ResourceID = "iron" | "copper" | "coal" | "water"
+local ServerStorage = game:GetService("ServerStorage")
+local ResourcesFolder: Folder = ServerStorage.Resources
+
+export type ResourceID = "iron" | "copper" | "coal" | "silicon" | "uranium"
 
 export type Resource = {
 	spawnRate: number,
+	color: Color3Value,
+	layoutOrder: number,
+	icon: string,
 }
 
-export type Resources = {
-	maxBuffCount: number,
-	iron: Resource,
-	copper: Resource,
-	coal: Resource,
-	water: Resource,
+local Resources = {
+	iron = {} :: Resource,
+	copper = {} :: Resource,
+	coal = {} :: Resource,
+	silicon = {} :: Resource,
+	uranium = {} :: Resource,
 }
 
-return {
-	maxBuffCount = 2,
-	iron = {
-		spawnRate = 0.25,
-	},
-	copper = {
-		spawnRate = 0.25,
-	},
-	coal = {
-		spawnRate = 0.20,
-	},
-	water = {
-		spawnRate = 0.30,
-	},
-} :: Resources
+for _, Resource: Instance in ResourcesFolder:GetChildren() do
+	if Resource:IsA("Configuration") and Resources[Resource.Name] ~= nil then
+		for _, property in Resource:GetChildren() do
+			Resources[Resource.Name][property.Name] = property.Value
+		end
+	else
+		warn("Inconsistency between ServerStorage Resources and Resources module. Failed to load:", Resource.Name)
+	end
+end
+
+return Resources
 
 -- the spawnRate sum of all resource types MUST ALWAYS BE 1
 -- the maxBuffCount MUST ALWAYS BE > 0 and < the amount of Resources

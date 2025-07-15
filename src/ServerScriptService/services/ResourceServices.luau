@@ -1,103 +1,77 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Drill = require(ServerScriptService.classes.Drill)
+
 local Resources = require(ServerScriptService.constants.Resources)
-local plotData = require(ServerScriptService.constants.PlotData)
-local DataService = require(ServerScriptService.services.DataService)
+local ResourceGen = require(ServerScriptService.constants.ResourceGen)
 
-local Events = ReplicatedStorage.Remotes.Events
+local Events: { RemoteEvent } = ReplicatedStorage.Remotes.Events
 
-local ResourceService = {}
+local GENERATION_TICK = 8 -- second
+
+local ResourceService = {
+	plots = {} :: {
+		[string]: {
+			loop: RBXScriptConnection,
+			gen: { [Resources.ResourceID]: boolean },
+			drills: { [string]: Drill.Drill },
+		},
+	},
+}
 
 function ResourceService.clientSync(player: Player, resources: { [string]: { amount: number, maxAmount: number } })
 	Events.UpdateResources:FireClient(player, resources)
 end
 
-function ResourceService.giveResource(player: Player, resource: Resources.ResourceID, amount: number, _profile): number
-	local profile = _profile and _profile or DataService.getProfile(player)
-	if not profile or (profile and not profile:IsActive()) then
-		return warn("[giveResource]: No profile found for", player)
+function ResourceService.generate(PlotID: string, ticks: number)
+	local plot = ResourceService.plots[PlotID]
+	if not plot then
+		return
 	end
 
-	local plot: plotData.Plot = profile.Data.plot
+	local updated = {}
+	print("generating")
+	for DrillID, drill: Drill.Drill in plot.drills do
+		if drill.data.status == "running" then
+			local multiplier = plot.gen[drill.data.resource] and ResourceGen.buffedMultiplier
+				or ResourceGen.defaultMultiplier
+			local resourceAmount = drill:Generate(ticks * multiplier)
 
-	local currentAmount = plot.resources[resource].amount
-	local maxAmount = plot.resources[resource].maxAmount
-
-	local finalValue = currentAmount + amount
-	local delta = nil
-
-	if finalValue > maxAmount then
-		delta = finalValue - maxAmount
-		finalValue = maxAmount
-	end
-
-	plot.resources[resource].amount = finalValue
-
-	ResourceService.clientSync(player, {
-		[resource] = {
-			amount = finalValue,
-			maxAmount = maxAmount,
-		},
-	})
-
-	return delta
-end
-
-function ResourceService.giveResources(player: Player, resources: { [Resources.ResourceID]: number }, _profile)
-	local profile = _profile and _profile or DataService.getProfile(player)
-	if not profile or (profile and not profile:IsActive()) then
-		return warn("[giveResource]: No profile found for", player)
-	end
-
-	local plot = profile.Data.plot
-
-	local delta = {}
-	local givenResources = {}
-	for resource, amount in resources do
-		local currentAmount = plot.resources[resource].amount
-		local maxAmount = plot.resources[resource].maxAmount
-
-		local finalValue = currentAmount + amount
-		delta[resource] = nil
-
-		if finalValue > maxAmount then
-			delta[resource] = finalValue - maxAmount
-			finalValue = maxAmount
+			updated[DrillID] = resourceAmount
 		end
-
-		plot.resources[resource].amount = finalValue
-
-		givenResources[resource] = { amount = finalValue, maxAmount = maxAmount }
 	end
 
-	ResourceService.clientSync(player, givenResources)
-
-	return delta
+	print(updated)
+	-- Events.UpdateDrills:FireClient(player, updated)
 end
 
-function ResourceService.takeResource(player: Player, resource: string, amount: number)
-	local profile = DataService.getProfile(player)
-	if not profile or (profile and not profile:IsActive()) then
-		return warn("[takeResource]: No profile found for", player)
+function ResourceService.addDrill(PlotID: string, DrillID: string, drill: Drill.Drill)
+	local plot = ResourceService.plots[PlotID]
+	if not plot then
+		return
 	end
 
-	local plot = profile.Data.plot
+	plot.drills[DrillID] = drill
+end
 
-	local currentValue = plot.resources[resource].value
-	local finalValue = currentValue - amount
-	local delta = nil
+function ResourceService.addPlot(PlotID: string, gen)
+	local acc = 0
+	print(gen)
+	ResourceService.plots[PlotID] = {
+		gen = gen,
+		drills = {},
+		loop = RunService.Heartbeat:Connect(function(dt)
+			acc += dt
+			if acc >= GENERATION_TICK then
+				ResourceService.generate(PlotID, GENERATION_TICK)
+				acc %= GENERATION_TICK
+			end
 
-	if finalValue < 0 then
-		delta = finalValue * -1
-		finalValue = 0
-	end
-
-	plot.resources[resource].value = finalValue
-
-	ResourceService.clientSync(player, { [resource] = plot.resources[resource] })
-
-	return delta
+			-- BuildingService.update(player, plot)
+		end),
+	}
 end
 
 return ResourceService

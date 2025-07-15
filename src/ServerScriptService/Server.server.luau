@@ -1,20 +1,70 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
-local ProfileStore = require(ServerScriptService.lib.ProfileStore)
+
+local Resources = require(ServerScriptService.constants.Resources)
+local PlotService = require(ServerScriptService.services.PlotService)
 
 local DataService = require(ServerScriptService.services.DataService)
 local CashService = require(ServerScriptService.services.CashService)
 local ResourceService = require(ServerScriptService.services.ResourceServices)
-local PlotService = require(ServerScriptService.services.PlotService)
+local BuildingService = require(ServerScriptService.services.BuildingService)
+
+local Events: { RemoteEvent } = ReplicatedStorage.Remotes.Events
 
 local Players = game:GetService("Players")
 
+local ProfileStore = require(ServerScriptService.lib.ProfileStore)
 local PlayerProfileData = require(ServerScriptService.constants.PlayerProfileData)
 local PlayerStore = ProfileStore.New("PlayerStore", PlayerProfileData)
 
 local function init(player: Player, profile: typeof(PlayerStore:StartSessionAsync()))
 	-- DataService.resetProfile(profile)
-	PlotService.start(player, profile)
-	CashService.clientSync(player, profile.Data.cash)
+	PlotService.assign(player, profile)
+	-- PlotService.start(player, profile)
+
+	-- local plot = profile.Data.plot :: typeof(PlotService.create())
+	-- local dataToLoad = {
+	-- 	cash = profile.Data.cash,
+	-- 	resources = {},
+	-- 	drills = {},
+	-- 	storages = {},
+	-- }
+
+	-- for ResourceID, ResourceData in Resources do
+	-- 	dataToLoad.resources[ResourceID] = {
+	-- 		color = ResourceData.color,
+	-- 		icon = ResourceData.icon,
+	-- 		layoutOrder = ResourceData.layoutOrder,
+	-- 		buffed = plot.gen[ResourceID].buffed,
+	-- 		storedTotal = 0,
+	-- 		maxCapacity = 0,
+	-- 	}
+
+	-- 	for id, storage in plot.storages[ResourceID] do
+	-- 		dataToLoad.resources[ResourceID].storedTotal += storage.stored
+	-- 		dataToLoad.resources[ResourceID].maxCapacity += storage.capacity
+
+	-- 		dataToLoad.storages[id] = {
+	-- 			resource = ResourceID,
+	-- 			level = storage.level,
+	-- 			stored = storage.stored,
+	-- 			capacity = storage.capacity,
+	-- 			status = storage.status,
+	-- 		}
+	-- 	end
+
+	-- 	for id, drill in plot.drills[ResourceID] do
+	-- 		dataToLoad.drills[id] = {
+	-- 			resource = ResourceID,
+	-- 			level = drill.level,
+	-- 			stored = drill.stored,
+	-- 			capacity = drill.capacity,
+	-- 			status = drill.status,
+	-- 		}
+	-- 	end
+	-- end
+
+	-- Events.LoadPlayerData:FireClient(player, dataToLoad)
 end
 
 local function playerAdded(player: Player)
@@ -50,7 +100,7 @@ end
 local function playerRemoving(player: Player)
 	local profile = DataService.Profiles[player]
 	if profile then
-		PlotService.stop(profile)
+		PlotService.unassign(player)
 		profile:EndSession()
 		DataService.Profiles[player] = nil
 	end
