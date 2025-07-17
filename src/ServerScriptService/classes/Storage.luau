@@ -2,15 +2,25 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Resources = require(ServerScriptService.constants.Resources)
-local Building = require(ServerScriptService.classes.Building)
+local BaseBuilding = require(ServerScriptService.classes.BaseBuilding)
 
-export type Storage = Building.Building & {}
+export type Storage = BaseBuilding.Building & {
+        base: BaseBuilding.Building,
+}
 
 local Storage = {}
 Storage.__index = Storage
 
-function Storage.new(id: string, data: Building.BuildingData, attachPoint: Part): Storage
-	local self: Storage = setmetatable(Building.new(id, data, attachPoint), Storage)
+function Storage.new(id: string, data: BaseBuilding.BuildingData, attachPoint: Part): Storage
+        local building = BaseBuilding.new(id, data, attachPoint)
+
+        local self: Storage = setmetatable({
+                base = building,
+                data = building.data,
+                Instance = building.Instance,
+                fill = building.fill,
+                capacity = building.capacity,
+        }, Storage)
 
 	return self
 end

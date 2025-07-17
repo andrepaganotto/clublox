@@ -8,47 +8,16 @@ local ResourceGen = require(ServerScriptService.constants.ResourceGen)
 local DataService = require(ServerScriptService.services.DataService)
 local ResourceService = require(ServerScriptService.services.ResourceServices)
 local BuildingService = require(ServerScriptService.services.BuildingService)
+local PlotClass = require(ServerScriptService.classes.Plot)
 
 local PlotService = {}
 
-local WorldPlots = workspace:WaitForChild("plots"):GetChildren()
+local PlotModels = workspace:WaitForChild("plots"):GetChildren()
 local availablePlots = {}
-local plots = {} :: { [Player]: Plot }
+local plots = {} :: { [Player]: PlotClass.Plot }
 
-for _, Plot: Model in WorldPlots do
-	local ResourceVeins: Folder = Plot.veins
-	local StorageLines: Folder = Plot.storages
-
-	local newPlot = {
-		id = Plot.Name,
-		assigned = false,
-		buildings = {},
-		attachPoints = { drill = {}, storage = {} },
-	}
-
-	for ResourceID in Resources do
-		local ResourceVein = ResourceVeins:FindFirstChild(ResourceID)
-		local StorageLine = StorageLines:FindFirstChild(ResourceID)
-
-		newPlot.attachPoints.drill[ResourceID] = {}
-		newPlot.attachPoints.storage[ResourceID] = {}
-
-		if ResourceVein and StorageLine then
-			for _, attachPoint: Part in ResourceVein.attachPoints:GetChildren() do
-				local index = string.split(attachPoint.Name, "_")[3]
-				table.insert(newPlot.attachPoints.drill[ResourceID], index, attachPoint)
-			end
-
-			for _, attachPoint: Part in StorageLine:GetChildren() do
-				local index = string.split(attachPoint.Name, "_")[3]
-				table.insert(newPlot.attachPoints.storage[ResourceID], index, attachPoint)
-			end
-		else
-			warn(`Theres no {ResourceID} VEIN and/or SLOTS in {Plot.Name}`)
-		end
-	end
-
-	table.insert(availablePlots, newPlot)
+for _, model: Model in PlotModels do
+        table.insert(availablePlots, PlotClass.new(model))
 end
 
 type PlotData = {
@@ -70,16 +39,9 @@ type PlotData = {
 	},
 }
 
-type Plot = {
-	id: string,
-	assigned: boolean,
-	data: PlotData, -- this data is saved on the database/profile store
-	loop: RBXScriptConnection,
-	buildings: { [string]: Model },
-	attachPoints: {
-		drill: { [Resources.ResourceID]: { Part } },
-		storage: { [Resources.ResourceID]: { Part } },
-	},
+type Plot = PlotClass.Plot & {
+        data: PlotData,
+        loop: RBXScriptConnection?,
 }
 
 function PlotService.create(): PlotData

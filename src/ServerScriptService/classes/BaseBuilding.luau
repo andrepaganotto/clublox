@@ -22,11 +22,11 @@ export type Building = {
 	capacity: number,
 }
 
-local Building = {}
-Building.__index = Building
+local BaseBuilding = {}
+BaseBuilding.__index = BaseBuilding
 
-function Building.new(id: string, data: BuildingData, attachPoint: Part): Building
-	local self = {
+function BaseBuilding.new(id: string, data: BuildingData, attachPoint: Part): Building
+    local self = {
 		id = id,
 		data = data,
 	}
@@ -43,7 +43,7 @@ function Building.new(id: string, data: BuildingData, attachPoint: Part): Buildi
 
 	self.capacity = level.capacity
 
-	return self
+    return self
 end
 
-return Building
+return BaseBuilding

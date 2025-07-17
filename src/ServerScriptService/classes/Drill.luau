@@ -3,24 +3,33 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Resources = require(ServerScriptService.constants.Resources)
 
-local Building = require(ServerScriptService.classes.Building)
+local BaseBuilding = require(ServerScriptService.classes.BaseBuilding)
 local BuildingLevels = require(ServerScriptService.constants.BuildingLevels)
 
-export type Drill = Building.Building & {
-	genRate: number,
+export type Drill = BaseBuilding.Building & {
+        base: BaseBuilding.Building,
+        genRate: number,
 }
 
 local Drill = {}
 Drill.__index = Drill
 
-function Drill.new(id: string, data: Building.BuildingData, attachPoint: Part): Drill
-	local self: Drill = setmetatable(Building.new(id, data, attachPoint), Drill)
+function Drill.new(id: string, data: BaseBuilding.BuildingData, attachPoint: Part): Drill
+        local building = BaseBuilding.new(id, data, attachPoint)
+
+        local self: Drill = setmetatable({
+                base = building,
+                data = building.data,
+                Instance = building.Instance,
+                fill = building.fill,
+                capacity = building.capacity,
+        }, Drill)
 
 	-- this is setted up everytime the building gets instanciated so it gets the latest update from the server data
 	-- whenever the base genRate of a drill level is changed the server will always have the latest value, so do the drill
-	self.genRate = BuildingLevels.drill[self.data.level].genRate
+        self.genRate = BuildingLevels.drill[self.data.level].genRate
 
-	return self
+        return self
 end
 
 function Drill:Generate(ticks: number): number
